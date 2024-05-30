@@ -4,7 +4,7 @@
 
  ## TLDR; ?
  Get started quickly with a silent installation and enrollment.  Place your JWTs in a folder of your choice.  Open Windows Explorer on that folder and paste in the following.
- > Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -install"
+ > Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -install"
 
 Hungry for more?  Read further below!
 
@@ -14,10 +14,7 @@ Hungry for more?  Read further below!
 
 ![Example][Example]
 
-Regardless of which system controls the endpoint (CloudZITI or OpenZITI) the endpoint must be registered as a valid identity. If you wish to try out the FREE TEAMS EDITION of CloudZITI, sign up at [CloudZITI](https://nfconsole.io/signup).
 
-### Prerequisite
-Clone and build your own OpenZITI network with [OpenZITI](https://github.com/openziti) or sign up for free to the [CloudZITI](https://nfconsole.io/signup) which automatically deploys all elements for you.
 
 ### MODE ONE: Silent Installation and Enrollment of Identities
 This utility can boot strap itself, install OpenZITI Windows Desktop Edge, and enroll any available identities.
@@ -25,7 +22,7 @@ This utility can boot strap itself, install OpenZITI Windows Desktop Edge, and e
 1. Place identity files [JWTs] in the folder that the explorer window is showing and the utility will find and utilize them. 
 2. Run the following in an explorer window.  
 
-> Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -conf https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/NFZDEWHelper_BASICINSTALL.ps1"
+> Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -conf https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/NFZDEWHelper_BASICINSTALL.ps1"
 
 This command is broken down as:
 * Runs Powershell.exe (A Shell for Windows) with a command syntax.
@@ -43,7 +40,7 @@ Once run, the command performs the following:
 ### MODE TWO: Print Environment
 This utility can boot strap itself and print the environment with regards to OpenZITI installation and runtime tasks.
 
-> Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -conf https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/NFZDEWHelper_ENVIRONMENT.ps1"
+> Powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -DisableKeepAlive -UseBasicParsing https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/NFZDEWHelper.ps1 -OutFile NFZDEWHelper.ps1; .\NFZDEWHelper.ps1 -conf https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/NFZDEWHelper_ENVIRONMENT.ps1"
 
 This command is broken down as:
 * Runs Powershell.exe (A Shell for Windows) with a command syntax.
@@ -61,4 +58,4 @@ There are other modes of operation handled by the utility.  To see them, simply 
 For more information, see the open source project page at [OpenZITI](https://github.com/openziti).
 
 [PS-shield]: https://img.shields.io/badge/Code%20Basis-Windows%20PowerShell-blue.svg
-[Example]: https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW/ZDEW_Silent.gif
+[Example]: https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/zella-test/Utilities/OpenZITI-ZDEW/ZDEW_Silent.gif
