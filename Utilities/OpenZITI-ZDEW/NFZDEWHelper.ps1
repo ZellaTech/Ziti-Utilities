@@ -1035,58 +1035,70 @@ function MainRuntime {
 InitialChecking (Get-Variable -Name ($ParameterList = (Get-Command -Name ("$MyPath\$MyRootExec")).Parameters).Values.Name -ErrorAction SilentlyContinue)
 
 switch (CheckAdmin) {
-    0 {
-        #...
-        if ($AutoUpdate -EQ "true") {
-            #...
-        } else {
-            MainRuntime
-            break
-        }
-    }
-    1 {
-        GoToPrint "1" "Yellow" "Runtime is NOT elevated. Elevation will be attempted."
-        try {
-            $LogPath = "C:\Zella\Logs"
-            if (-not (Test-Path -Path $LogPath)) {
-                New-Item -ItemType Directory -Path $LogPath
-            }
-
-            $LogFile = "$LogPath\$InputJWT.log"
-
-            if ($LogElevation) {
-                Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
-                "-Command",
-                "Start-Transcript -Append \`"$LogFile\`";
-                    & \`"$MyPath\$MyRootExec\`" $MyCommandLine;
-                    & Write-Host \`"Log created at [\`"$LogFile\`"]. Window will close in 10 seconds.\`";
-                    & Start-Sleep 10;
-                "
-            } else {
-                Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
-                "-Command",
-                "\`"$MyPath\$MyRootExec\`" $MyCommandLine;
-                    & Write-Host \`"Window will close in 10 seconds.\`"
-                "
-            }
-        } catch {
-            GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
-            Start-Sleep 5
-        } finally {
-            $error.clear()
-        }
-        break
-    }
-    2 {
-        GoToPrint "1" "White:Red" "ERROR: The Operating System is not at a build level which supports the required operations."
-        pause
-        break
-    }
-    default {
-        GoToPrint "1" "White:Red" "ERROR: A failure occurred preventing further runtime."
-        pause
-        break
-    }
+	0 {
+		GoToPrint "1" "Green" "Runtime is elevated."
+		if ($AutoUpdate -EQ "true") {
+			GoToPrint "1" "Yellow" "Checking for updates, please wait..."
+			if (CheckUpdate) {
+				try {
+					Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+					"-Command",
+					"Start-Transcript -Append \`"$MyPath\$MyRootName.log\`";
+						& \`"$MyPath\$MyRootName\`" $MyCommandLine;
+					"
+					break
+				} catch {
+					GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
+					Start-Sleep 5
+				} finally {
+					$error.clear()
+				}
+			} else {
+				MainRuntime
+				break
+			}
+		} else {
+			GoToPrint "1" "DarkGray" "Checking for updates is not enabled."
+			MainRuntime
+			break
+		}
+	}
+	1 {
+		GoToPrint "1" "Yellow" "Runtime is NOT elevated. Elevation will be attempted."
+		try {
+			if ($LogElevation) {
+				Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+				"-Command",
+				"Start-Transcript -Append \`"$MyPath\$MyRootName.log\`";
+					& \`"$MyPath\$MyRootExec\`" $MyCommandLine;
+					& Write-Host \`"Log created at [\`"$MyPath\$MyRootName.log\`"]. Window will close in 10 seconds.\`";
+					& Start-Sleep 10;
+				"
+			} else {
+				Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+				"-Command",
+				"\`"$MyPath\$MyRootExec\`" $MyCommandLine;
+					& Write-Host \`"Window will close in 10 seconds.\`"
+				"
+			}
+		} catch {
+			GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
+			Start-Sleep 5
+		} finally {
+			$error.clear()
+		}
+		break
+	}
+	2 {
+		GoToPrint "1" "White:Red" "ERROR: The Operating System is not at a build level which supports the required operations."
+		pause
+		break
+	}
+	default {
+		GoToPrint "1" "White:Red" "ERROR: A failure occurred preventing further runtime."
+		pause
+		break
+	}
 }
 
 PrintBanner "TERM"
