@@ -25,7 +25,6 @@ param(
 	[Parameter()][Alias('JWT')][string]$InputJWT,
 	[Parameter(ValueFromRemainingArguments = $true)][string]$UnknownArgs
 )
-
 ### STATIC VARIABLES LOADER ###
 $MyWarranty     = "This program comes without any warranty, implied or otherwise."
 $MyLicense      = "This program utilizes the Apache 2.0 license."
@@ -63,7 +62,6 @@ $RequiredCmds   = @(
 $OptionalCmds	= @(
 	"Get-DnsClientGlobalSetting","Add-DnsClientNrptRule","Remove-DnsClientNrptRule","Clear-DnsClientCache","Set-DnsClientGlobalSetting"
 )
-
 ### INTERNAL CONFIGURATION DEFAULTS ###
 $ConfigDefaults	= '
 	$script:DefaultMode     = "environment" # Default mode if no options arguments are passed in. See help menu for options.
@@ -86,7 +84,6 @@ $ConfigDefaults	= '
 		"5.6.7.8"
 	)
 '
-
 ###################################################################################################################
 ### FUNCTIONS LOADER ###
 # Printer.
@@ -118,7 +115,6 @@ function GoToPrint ([int]$PrintLevel="1", $PrintColor="DarkGray:White", $PrintMe
 		}
 	}
 }
-
 # Color banner generation.
 function PrintBanner ($PrintType = "INIT") {
 	$NFBanner = @(
@@ -152,7 +148,6 @@ function PrintBanner ($PrintType = "INIT") {
 		}
 	}
 }
-
 # Check for ADMIN rights.
 function CheckAdmin {
 	if (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -165,7 +160,6 @@ function CheckAdmin {
 		}
 	}
 }
-
 # Second level function to find a process in the system.
 function FindProcess ($ThisProcess) {
 	try {
@@ -177,7 +171,6 @@ function FindProcess ($ThisProcess) {
 		$error.clear()
 	}
 }
-
 # Get current environment.
 function RunGetCurrentEnv ($GetTypes="ALL") {
 	if (($GetTypes -EQ "ALL") -OR ($GetTypes -EQ "ZPROCESSES")) {
@@ -198,7 +191,6 @@ function RunGetCurrentEnv ($GetTypes="ALL") {
 			GoToPrint "1" "Yellow" "OPENZITI WINDOWS UPDATE SERVICE [NOTRUNNING]."
 		}
 	}
-
 	if (($GetTypes -EQ "ALL") -OR ($GetTypes -EQ "DNS")) {
 		GoToPrint "1" "White:DarkCyan" "#### DNSCLIENTGLOBALSETTINGS ####"
 		Get-DnsClientGlobalSetting | Select-Object SuffixSearchList | Out-String -Stream | Where { $_.Trim().Length -gt 0 }
@@ -213,7 +205,6 @@ function RunGetCurrentEnv ($GetTypes="ALL") {
 		} | Sort-Object "ActualName" | Format-Table -AutoSize | Out-String -Stream | Where { $_.Trim().Length -gt 0 }
 	}
 }
-
 # Get a resolved name from DNS.
 function RunGetResolution ($InputArgs) {
 	GoToPrint "1" "White:DarkCyan" "######### DNSRESOLUTION #########"
@@ -221,7 +212,6 @@ function RunGetResolution ($InputArgs) {
 	GoToPrint "1" "DarkGray" "Sending [$InputArgs] for resolution."
 	Invoke-Expression $InputArgs | Format-Table -AutoSize | Out-String -Stream | Where { $_.Trim().Length -gt 0 }
 }
-
 # Get task(s) from the OS.
 function RunGetTasks ($InputArgs, $REQType) {
 	GoToPrint "1" "White:DarkCyan" "########## TASKLOOKUP ##########"
@@ -233,21 +223,15 @@ function RunGetTasks ($InputArgs, $REQType) {
 	GoToPrint "1" "DarkGray" "Sending [$InputArgs] for review."
 	Invoke-Expression $InputArgs | Format-Table -AutoSize | Out-String -Stream | Where { $_.Trim().Length -gt 0 }
 }
-
 # Run the ADD function.
 function RunAdd {
-
 	GoToPrint "1" "White:DarkCyan" "########## DNSRULESADD ##########"
-
 	if ($script:DNSCGSetting) {
-
 		GoToPrint "1" "DarkGray" "Adding rules to the system."
-
 		if (($NameServers[0] -EQ "DNS_SERVER_1") -OR ($Domain[0] -EQ ".domain.local")) {
 			GoToPrint "2" "Yellow" "WARNING: DNS/DOMAIN SERVERS list in this file has not been updated so no action has been taken to update settings."
 			return
 		}
-
 		Get-DnsClientNrptRule | Where "DisplayName" -EQ "$DisplayName" | ForEach-Object {
 			$ThisDisplayName = $_.DisplayName
 			$ThisDomain = $_.NameSpace
@@ -255,10 +239,8 @@ function RunAdd {
 			GoToPrint "1" "DarkGray" "Cleaning rule [DisplayName=$ThisDisplayName] [Namespace=$ThisDomain] [NameServers=$ThisNameServers]."
 			Remove-DnsClientNrptRule -Name $_.Name -Force
 		}
-
 		GoToPrint "1" "DarkGray" "Adding rule [DisplayName=$DisplayName] [Namespace=$Domain] [NameServers=$NameServers]."
 		Add-DnsClientNrptRule -Namespace $Domain -NameServers $NameServers -Comment $Comment -DisplayName $DisplayName
-
 		try {
 			$TargetRule = (Get-DnsClientNrptRule | Where-Object {$_.DisplayName -EQ "$DisplayName"}).Name
 			$TargetRuleModified = $TargetRule -Replace '{(.*)-(.*)-(.*)-(.*)-(.*)}','{00000000-$2-$3-$4-$5}'
@@ -274,7 +256,6 @@ function RunAdd {
 			}
 			$error.clear()
 		}
-
 		if ($DNSCGSetting.SuffixSearchList.Contains($AddSuffix)) {
 			if ($DNSCGSetting.SuffixSearchList[0] -NE $AddSuffix) {
 				$SuffixIndex = $DNSCGSetting.SuffixSearchList.IndexOf($AddSuffix)
@@ -289,28 +270,21 @@ function RunAdd {
 			$DNSCGSetting.SuffixSearchList = @($AddSuffix; $DNSCGSetting.SuffixSearchList)
 			Set-DnsClientGlobalSetting -SuffixSearchList $DNSCGSetting.SuffixSearchList
 		}
-
 		GoToPrint "1" "DarkGray" "Clearing DNS cache."
 		Clear-DnsClientCache
-
 	} else {
-
 		GoToPrint "1" "Red" "Function ""add"" cannot execute due to unavailable data method."
-
 	}
 }
-
 # Decode a JWT into parts.
 function Parse-JWTtoken {
 	[cmdletbinding()]
 	param([Parameter(Mandatory=$true)][string]$InputJWT)
-
 	# Parse the input.
 	if (-NOT($InputJWT.Contains(".")) -OR -NOT($InputJWT.StartsWith("eyJ"))) {
 		GoToPrint "1" "Red" "Invalid JWT was provided."
 		return 0
 	}
-
 	# Payload.
 	$JWTPayload = $InputJWT.Split(".")[1].Replace('-', '+').Replace('_', '/')
 	# Fix padding as needed, keep adding "=" until string length modulus 4 reaches 0.
@@ -323,16 +297,13 @@ function Parse-JWTtoken {
 	$JSONArray = [System.Text.Encoding]::ASCII.GetString($ByteArray)
 	# Convert from JSON to PSObject.
 	$JSONObj = $JSONArray | ConvertFrom-Json
-
 	return $JSONObj
 }
-
 # Resolve the latest version of software in a repo.
 function RunRepoResolve ($ResolveRepo) {
 	$ResolvedVersion = Invoke-RestMethod -Uri "$ResolveRepo"
 	$ResolvedVersion.tag_name.Trim("v"," ")
 }
-
 # Choose a method to DOWNLOAD.
 function DownloadMethod ($DLSource, $DLWhat, $DLDestination, $DLMethod="$DLDefaultMethod") {
 	GoToPrint "1" "Yellow" "Downloading [$DLWhat] from [$DLSource] using [$DLMethod], please wait..."
@@ -355,7 +326,6 @@ function DownloadMethod ($DLSource, $DLWhat, $DLDestination, $DLMethod="$DLDefau
 	}
 	return $BTRETURN
 }
-
 # Run the DOWNLOAD AND INSTALL function.
 function DownloadInstall {
 	if ($ZDERVer -EQ "AUTO") {
@@ -369,7 +339,6 @@ function DownloadInstall {
 		$ZCLIRVer = RunRepoResolve "$ZCLIRRepo"
 		$ZCLIRZip = "ziti-windows-amd64-$ZCLIRVer.zip"
 	}
-
 	if ($EnrollMethod -EQ "ZCLI") {
 		$ZDECLIEnroll = $MyTmpPath + "\ziti\$ZTCLIRBinary"
 		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
@@ -377,9 +346,7 @@ function DownloadInstall {
 	} elseif ($EnrollMethod -EQ "NATIVE") {
 		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
 	}
-
 	if ([string]::IsNullOrWhiteSpace($BTRETURN)) {
-
 		$WAITCOUNT = 0
 		do {
 			$WAITCOUNT++
@@ -401,14 +368,11 @@ function DownloadInstall {
 		#	return 0
 		#}
 		GoToPrint "1" "Green" "OpenZITI installation binary is available. Download complete."
-
 		GoToPrint "1" "Yellow" "Now installing NetFoundry software silently, please wait..."
 		Start-Process "$MyTmpPath\$ZDERBinary" -WorkingDirectory "$MyTmpPath" -ArgumentList "/PASSIVE" -Wait
-
 		if ($EnrollMethod -EQ "ZCLI") {
 			Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
 		}
-
 		if ((Test-Path "$ZRPath\$ZUIRBinary") -AND ($EnrollMethod -EQ "NATIVE" -OR (Test-Path "$ZDECLIEnroll"))) {
 			Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
 			GoToPrint "1" "Green" "Install complete."
@@ -423,21 +387,16 @@ function DownloadInstall {
 			GoToPrint "1" "White:Red" "Install failed.  Cannot continue."
 			return 0
 		}
-
 	} else {
-
 		GoToPrint "1" "Red" "Download failed. Cannot continue. Error message below."
 		GoToPrint "1" "Red" "$BTRETURN"
 		return 0
-
 	}
 }
-
 # Run the ENROLL function.
 function RunEnroll {
 	GoToPrint "1" "Yellow" "Now enrolling any available identities, please wait..."
 	if ($InputJWT) {
-
 		if ($InputJWT.length -LT 500) {
 			GoToPrint "1" "Red" "ERROR: The input JWT string is not correct for processing."
 			return
@@ -445,9 +404,7 @@ function RunEnroll {
 		Set-Content $TargetJWT $InputJWT 2>&1 | out-null
 		$AllEnrollments = New-Object -TypeName psobject
 		$AllEnrollments | Add-Member -MemberType NoteProperty -Name Name -Value "$MyName.jwt"
-
 	} elseif ($JWTObtain -EQ "ASK") {
-
 		$InputJWT = Read-Host "Paste the enrollment JWT string." -AsSecureString
 		while ($InputJWT.length -LT 500) {
 			GoToPrint "1" "Red" "ERROR: The input JWT string is not correct for processing."
@@ -456,18 +413,14 @@ function RunEnroll {
 		Set-Content $TargetJWT $InputJWT 2>&1 | out-null
 		$AllEnrollments = New-Object -TypeName psobject
 		$AllEnrollments | Add-Member -MemberType NoteProperty -Name Name -Value "$MyName.jwt"
-
 	} elseif ($JWTObtain -EQ "SEARCH") {
-
 		$AllEnrollments = Get-ChildItem -Path $MyPath *.jwt -File -ErrorAction SilentlyContinue
 		if ($AllEnrollments.count -EQ 0) {
 			GoToPrint "1" "Yellow" "WARNING: There were no JWTs for enrollment in the local path."
 		} else {
 			GoToPrint "1" "Green" "Found [$($AllEnrollments.count)] enrollments to process."
 		}
-
 	}
-
 	# Interworking for the pipe system.
 	$PipeInit = {
 		function ZPipeRelay ($PipeInputPayload) {
@@ -534,12 +487,10 @@ function RunEnroll {
 				start-sleep -Milliseconds 100
 		}
 	}
-
 	$AllEnrollments | ForEach-Object {
 		$TargetFile = ($_.Name).Replace(".jwt","")
 		$TargetJWT = $TargetPath + "\" + $TargetFile + ".jwt"
 		$TargetJSON = $TargetPath + "\" + $TargetFile + ".json"
-
 		GoToPrint "1" "Yellow" "Reviewing enrollment JWT [$TargetFile]..."
 		$JSONObj = Parse-JWTtoken (Get-Content "$TargetJWT")
 		if (-NOT ($JSONObj -EQ "")) {
@@ -559,14 +510,11 @@ function RunEnroll {
 			GoToPrint "1" "Red" "Enrollment of [$TargetFile] failed because it is not a valid JWT."
 			return
 		}
-
 		GoToPrint "1" "Yellow" "Now enrolling [$TargetFile] using method [$EnrollMethod], please wait..."
 		if ($EnrollMethod -EQ "NATIVE") {
-
 			$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
 				param($TargetJWT,$TargetFile)
 				$TargetJWTString = Get-Content "$TargetJWT"
-
 				$WAITCOUNT = 0
 				do {
 					$WAITCOUNT++
@@ -578,7 +526,6 @@ function RunEnroll {
 					GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/20)"
 				} until (ZPipeRelay "OPEN")
 				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
-
 				$WAITCount = 0
 				do {
 					$WAITCOUNT++
@@ -592,12 +539,9 @@ function RunEnroll {
 					start-sleep 1
 				} until (ZPipeRelay "READ")
 				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe accepted the enrollment request."
-
 				$script:ZIPCIOENROLLRESPONSE
-
 				ZPipeRelay "CLOSE"
 			}
-
 			# Begin review of enrollment process until no more data is available on the process.
 			$EnrollState = $false
 			do {
@@ -626,9 +570,7 @@ function RunEnroll {
 					break
 				}
 			} while (((Get-Job -Name "$TargetFile-ZENROLL").HasMoreData) -EQ $true)
-
 			Remove-Job -Force -Name $TargetFile-ZENROLL
-
 			# If the flag of TRUE was caught, review that data payload from the output.
 			if ($EnrollState) {
 				$WAITCOUNT = 0;
@@ -647,9 +589,7 @@ function RunEnroll {
 					GoToPrint "1" "Red" "> MESSAGE: [$ErrorMessage]"
 				}
 			}
-
 		} elseif ($EnrollMethod -EQ "ZCLI") {
-
 			Start-Process "$ZTCLIRBinary" -WorkingDirectory "$TargetPath" -ArgumentList "edge enroll --jwt `"$TargetJWT`" --out `"$TargetJSON`" --rm" -Wait -ErrorVariable ERRETURN 2>&1 | out-null
 			if (Test-Path $TargetJSON) {
 				Move-Item -Path "$TargetJSON" -Destination "$ZDEKSPath" 2>&1 | out-null
@@ -679,7 +619,6 @@ function RunEnroll {
 	}
 	GoToPrint "1" "Green" "Enrollment complete."
 }
-
 # Download and install the software.
 function RunInstall {
 	GoToPrint "1" "White:DarkCyan" "########## ZDEWINSETUP ##########"
@@ -701,7 +640,6 @@ function RunInstall {
 		$TargetJSON = $MyTmpPath + "\" + $MyName + ".json"
 		GoToPrint "1" "DarkGray" "JWT input string available. Will attempt to utilize it later."
 	}
-
 	try {
 		$HKLMData = Get-ItemProperty "$RegistryZSW" -ErrorAction SilentlyContinue
 	} catch {
@@ -728,7 +666,6 @@ function RunInstall {
 		$error.clear()
 	}
 }
-
 # Remove only target entries from NRPT.
 function RunRemove {
 	GoToPrint "1" "White:DarkCyan" "########## DNSRULESREM ##########"
@@ -757,7 +694,6 @@ function RunRemove {
 		GoToPrint "1" "Red" "Function ""remove"" cannot execute due to unavailable data method."
 	}
 }
-
 # Remove all entries from NRPT.
 function RunRemoveAll {
 	GoToPrint "1" "White:DarkCyan" "########## DNSRULESREM ##########"
@@ -798,7 +734,6 @@ function RunRemoveAll {
 		GoToPrint "1" "Red" "Function ""removeall"" cannot execute due to unavailable data method."
 	}
 }
-
 # Check AD and list details if available.
 function RunADList {
 	GoToPrint "1" "White:DarkCyan" "###### ACTIVEDIRECTORYLIST ######"
@@ -814,7 +749,6 @@ function RunADList {
 		GoToPrint "1" "Red" "ERROR: Could not execute the listing."
 	}
 }
-
 # Command checking.
 function CommandChecking {
 	try {
@@ -829,7 +763,6 @@ function CommandChecking {
 	} finally {
 		$error.clear()
 	}
-
 	try {
 		$private:CheckedCommands = Get-Command $OptionalCmds -ErrorAction stop
 		if ($Verbosity -GE 3) {
@@ -842,11 +775,9 @@ function CommandChecking {
 		$error.clear()
 	}
 }
-
 # Checking performed at initialization of the program.
 function InitialChecking ($ParameterList=$null) {
 	CommandChecking
-
 	try {
 		$script:FileHashLocal = (Get-FileHash "$MyPath\$MyRootExec" -Algorithm SHA1).Hash
 	} catch {
@@ -857,15 +788,12 @@ function InitialChecking ($ParameterList=$null) {
 	} finally {
 		$error.clear()
 	}
-
 	PrintBanner "INIT"
-
 	if ($Verbosity -GE 2) {
 		GoToPrint "2" "White:Black" "Runtime Information. CommandLine= [$($MyCommandLine)]"
 		GoToPrint "2" "White:Black" "User is [$($ThisUser.Name)]."
 		GoToPrint "2" "White:Black" "[$MyRootName] is running in the path [$MyPath]."
 	}
-
 	foreach ($Parameter in $ParameterList) {
 		if ($Parameter.Name.Contains("InputMode") -AND $Parameter.Value) {
 			$script:InputMode = $Parameter.Name.Replace("InputMode","").Trim()
@@ -885,9 +813,7 @@ function InitialChecking ($ParameterList=$null) {
 			Get-Variable -Name $Parameter.Value.Name -ErrorAction SilentlyContinue
 		}
 	}
-
 	$ConfigDefaults | Invoke-Expression
-
 	if ((Test-Path -Path "$MyConfig" -PathType Leaf) -AND (-NOT($CentralConfURL))) {
 		GoToPrint "1" "Green" "Found local configuration file. Loading configuration."
 		. "$MyConfig"
@@ -916,7 +842,6 @@ function InitialChecking ($ParameterList=$null) {
 		GoToPrint "1" "Green" "Configuration file was built from default. Continuing with default configuration."
 		. "$MyConfig"
 	}
-
 	if ($script:InputMode) {
 		if ($Verbosity -GE 2) {
 			GoToPrint "2" "DarkGray" "Using the specified mode [$($script:InputMode)]."
@@ -927,7 +852,6 @@ function InitialChecking ($ParameterList=$null) {
 		}
 		$script:InputMode = $script:DefaultMode
 	}
-
 	try {
 		$script:DNSCGSetting = Get-DnsClientGlobalSetting -ErrorAction SilentlyContinue
 	} catch {
@@ -936,7 +860,6 @@ function InitialChecking ($ParameterList=$null) {
 		$error.clear()
 	}
 }
-
 # Check/validate/syncronize and download the program from a server.
 function CheckUpdate {
 	try {
@@ -946,7 +869,6 @@ function CheckUpdate {
 	} finally {
 		$error.clear()
 	}
-
 	if (($FileHashLocal -EQ $null) -OR ($FileHashServer -EQ $null)) {
 		return 0
 	} elseif ($FileHashLocal -EQ $FileHashServer) {
@@ -965,7 +887,6 @@ function CheckUpdate {
 		}
 	}
 }
-
 # The help menu.
 function PrintHelp {
 	GoToPrint "1" "DarkGray" "[BLANK]                 : Will assume the default mode with no options of the program in its configuration parameters."
@@ -983,14 +904,12 @@ function PrintHelp {
 	GoToPrint "1" "DarkGray" "-JWT [STR]              : [OPTION] Affects certain [MODE]s which normally would seek a JWT."
 	GoToPrint "1" "DarkGray" "-conf (SERVERURL)       : [OPTION] Will attempt to load configuration from ""SERVERURL"" (EX: https://fragale.us/PDATA/NFZDEWHelper_conf.ps1)"
 }
-
 # Cleanup any temporary files and folders before exit is called.
 function RunCleanup {
 	GoToPrint "1" "White:DarkCyan" "############ CLEANUP ############"
 	Remove-Item $MyTmpPath -ErrorAction Ignore -Recurse
 	GoToPrint "1" "Green" "Temporary files have been cleaned."
 }
-
 # The MAIN runtime function.
 function MainRuntime {
 	if (($UnknownArgs) -OR ($InputMode -EQ "help")) {
@@ -1029,67 +948,89 @@ function MainRuntime {
 	}
 	RunCleanup
 }
-
 ###################################################################################################################
 ### MAIN ###
 InitialChecking (Get-Variable -Name ($ParameterList = (Get-Command -Name ("$MyPath\$MyRootExec")).Parameters).Values.Name -ErrorAction SilentlyContinue)
 
 switch (CheckAdmin) {
-    0 {
-        #...
-        if ($AutoUpdate -EQ "true") {
-            #...
-        } else {
-            MainRuntime
-            break
-        }
-    }
-    1 {
-        GoToPrint "1" "Yellow" "Runtime is NOT elevated. Elevation will be attempted."
-        try {
-            $LogPath = "C:\Zella\Logs"
-            if (-not (Test-Path -Path $LogPath)) {
-                New-Item -ItemType Directory -Path $LogPath
-            }
-
-            $LogFile = "$LogPath\$InputJWT.log"
-
-            if ($LogElevation) {
-                Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
-                "-Command",
-                "Start-Transcript -Append \`"$LogFile\`";
-                    & \`"$MyPath\$MyRootExec\`" $MyCommandLine;
-                    & Write-Host \`"Log created at [\`"$LogFile\`"]. Window will close in 10 seconds.\`";
-                    & Start-Sleep 10;
-                "
-            } else {
-                Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
-                "-Command",
-                "\`"$MyPath\$MyRootExec\`" $MyCommandLine;
-                    & Write-Host \`"Window will close in 10 seconds.\`"
-                "
-            }
-        } catch {
-            GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
-            Start-Sleep 5
-        } finally {
-            $error.clear()
-        }
-        break
-    }
-    2 {
-        GoToPrint "1" "White:Red" "ERROR: The Operating System is not at a build level which supports the required operations."
-        pause
-        break
-    }
-    default {
-        GoToPrint "1" "White:Red" "ERROR: A failure occurred preventing further runtime."
-        pause
-        break
-    }
+	0 {
+		GoToPrint "1" "Green" "Runtime is elevated."
+		if ($AutoUpdate -EQ "true") {
+			GoToPrint "1" "Yellow" "Checking for updates, please wait..."
+			if (CheckUpdate) {
+				try {
+					Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+					"-Command",
+					"Start-Transcript -Append \`"$MyPath\$MyRootName.log\`";
+						& \`"$MyPath\$MyRootName\`" $MyCommandLine;
+					"
+					break
+				} catch {
+					GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
+					Start-Sleep 5
+				} finally {
+					$error.clear()
+				}
+			} else {
+				MainRuntime
+				break
+			}
+		} else {
+			GoToPrint "1" "DarkGray" "Checking for updates is not enabled."
+			MainRuntime
+			break
+		}
+	}
+	1 {
+		GoToPrint "1" "Yellow" "Runtime is NOT elevated. Elevation will be attempted."
+		try {
+			if ($LogElevation) {
+				Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+				"-Command",
+				"Start-Transcript -Append \`"$MyPath\$MyRootName.log\`";
+					& \`"$MyPath\$MyRootExec\`" $MyCommandLine;
+					& Write-Host \`"Log created at [\`"$MyPath\$MyRootName.log\`"]. Window will close in 10 seconds.\`";
+					& Start-Sleep 10;
+				"
+			} else {
+				Start-Process powershell -Verb "RunAs" -ArgumentList "-ExecutionPolicy Bypass -NoLogo -NoProfile -Mta -WindowStyle Maximized",
+				"-Command",
+				"\`"$MyPath\$MyRootExec\`" $MyCommandLine;
+					& Write-Host \`"Window will close in 10 seconds.\`"
+				"
+			}
+		} catch {
+			GoToPrint "1" "White:Red" "ERROR: Elevation could not be achieved. Cannot continue."
+			Start-Sleep 5
+		} finally {
+			$error.clear()
+		}
+		break
+	}
+	2 {
+		GoToPrint "1" "White:Red" "ERROR: The Operating System is not at a build level which supports the required operations."
+		pause
+		break
+	}
+	default {
+		GoToPrint "1" "White:Red" "ERROR: A failure occurred preventing further runtime."
+		pause
+		break
+	}
 }
 
 PrintBanner "TERM"
+
+    
+          
+            
+    
+
+          
+          Expand Down
+    
+    
+  
 ###################################################################################################################
 # EOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOF #
 ###################################################################################################################
