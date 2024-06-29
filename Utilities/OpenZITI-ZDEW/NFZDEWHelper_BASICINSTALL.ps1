@@ -9,7 +9,7 @@ $script:OverwriteInst	= "true" # If set to "true" will overwrite if software alr
 #$script:JWTObtain		= "SEARCH" # Default Enrollment Action when no JWT string is passed in (ASK=Ask with prompt for JWT string | SEARCH=Find any JWTs in local dir).
 #$script:EnrollMethod	= "NATIVE" # Method in which to invoke enrollment (NATIVE=IPC | ZCLI=ZITI CLI).
 #$script:DLDefaultMethod= "BITS" # The default method by which to request downloads (BITS | WEBCLIENT).
-#$script:LogElevation	= "true" # A flag which causes the elevation event and subsequent runtime to be placed into a log file (true=logging enabled | false=no logging).
+$script:LogElevation	= "true" # A flag which causes the elevation event and subsequent runtime to be placed into a log file (true=logging enabled | false=no logging).
 #$script:AddSuffix		= "domain.local" # Change the following DOMAIN and NAMESERVERS as appropriate.
 #$script:Domain			= @(".domain.local")
 #$script:NameServers	= @("1.2.3.4" "5.6.7.8")
