@@ -605,7 +605,12 @@ function RunEnroll {
 				if ([string]::IsNullOrWhiteSpace($CurrentLine)) {
 					continue
 				} else {
-					$CurrentLineJSON = $CurrentLine | ConvertFrom-Json
+    Write-Output "Attempting to parse: $CurrentLine"
+					if ($CurrentLine -and ($CurrentLine -ne "")) {
+   					 $CurrentLineJSON = $CurrentLine | ConvertFrom-Json
+					} else {
+    Write-Output "Warning: No JSON data available to parse in the enrollment process."
+}
 				}
 				# Enrollment flags.
 				if (($CurrentLineJSON.Success -EQ $null) -AND ($CurrentLineJSON.Error -EQ $null) -AND ($CurrentLineJSON.Message -EQ $null)) {
