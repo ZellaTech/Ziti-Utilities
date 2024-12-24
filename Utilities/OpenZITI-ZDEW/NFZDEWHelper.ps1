@@ -596,36 +596,42 @@ function RunEnroll {
 			# Begin review of enrollment process until no more data is available on the process.
 			$EnrollState = $false
 			do {
-				$CurrentLine = Receive-Job -Name "$TargetFile-ZENROLL" -ErrorAction Continue 6>&1
-				if ([string]::IsNullOrWhiteSpace($CurrentLine)) {
-					continue
-				} else {
-    Write-Output "Attempting to parse: $CurrentLine"
-					if ($CurrentLine -and ($CurrentLine -ne "")) {
-   					 $CurrentLineJSON = $CurrentLine | ConvertFrom-Json
-					} else {
-    Write-Output "Warning: No JSON data available to parse in the enrollment process."
-}
-				}
-				# Enrollment flags.
-				if (($CurrentLineJSON.Success -EQ $null) -AND ($CurrentLineJSON.Error -EQ $null) -AND ($CurrentLineJSON.Message -EQ $null)) {
-					GoToPrint "1" "Red" "UNKNOWN_RESPONSE [$CurrentLine]"
-				} elseif ($CurrentLineJSON.Success -EQ $null) {
-					if ($CurrentLineJSON.Error) {
-						GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message) [$($CurrentLineJSON.Error)]"
-					} else {
-						GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message)"
-					}
-				} elseif ($CurrentLineJSON.Success -EQ $true) {
-					$EnrollState = $CurrentLineJSON.Success
-					GoToPrint "1" "Green" "The OpenZITI IPC pipe returned [$EnrollState]."
-					break
-				} elseif ($CurrentLineJSON.Success -EQ $false) {
-					$EnrollState = $CurrentLineJSON.Success
-					GoToPrint "1" "Red" "The OpenZITI IPC pipe returned [$EnrollState] with message [$($CurrentLineJSON.Error)]."
-					break
-				}
-			} while (((Get-Job -Name "$TargetFile-ZENROLL").HasMoreData) -EQ $true)
+    $CurrentLine = Receive-Job -Name "$TargetFile-ZENROLL" -ErrorAction Continue 6>&1
+    if ([string]::IsNullOrWhiteSpace($CurrentLine)) {
+        continue
+    } 
+    
+    try {
+        $CurrentLineJSON = $null
+        if ($CurrentLine -is [string] -and $CurrentLine.Trim() -ne "") {
+            $CurrentLineJSON = $CurrentLine | ConvertFrom-Json -ErrorAction Stop
+        }
+
+        # Handle JSON parsing
+        if ($CurrentLineJSON) {
+            if (($CurrentLineJSON.Success -eq $null) -and ($CurrentLineJSON.Error -eq $null) -and ($CurrentLineJSON.Message -eq $null)) {
+                GoToPrint "1" "Red" "UNKNOWN_RESPONSE [$CurrentLine]"
+            } elseif ($CurrentLineJSON.Success -eq $null) {
+                if ($CurrentLineJSON.Error) {
+                    GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message) [$($CurrentLineJSON.Error)]"
+                } else {
+                    GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message)"
+                }
+            } elseif ($CurrentLineJSON.Success -eq $true) {
+                $EnrollState = $CurrentLineJSON.Success
+                GoToPrint "1" "Green" "The OpenZITI IPC pipe returned [$EnrollState]."
+                break
+            } elseif ($CurrentLineJSON.Success -eq $false) {
+                $EnrollState = $CurrentLineJSON.Success
+                GoToPrint "1" "Red" "The OpenZITI IPC pipe returned [$EnrollState] with message [$($CurrentLineJSON.Error)]."
+                break
+            }
+        }
+    } catch {
+        Write-Host "Error processing enrollment response: $_"
+        continue
+    }
+} while (((Get-Job -Name "$TargetFile-ZENROLL").HasMoreData) -eq $true)
 
 			Remove-Job -Force -Name $TargetFile-ZENROLL
 
