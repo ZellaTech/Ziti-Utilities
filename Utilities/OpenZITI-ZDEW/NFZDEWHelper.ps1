@@ -565,20 +565,46 @@ function RunEnroll {
 		if ($EnrollMethod -EQ "NATIVE") {
 
 			$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
-				param($TargetJWT,$TargetFile)
-				$TargetJWTString = Get-Content "$TargetJWT"
+    param($TargetJWT,$TargetFile)
+    $TargetJWTString = Get-Content "$TargetJWT"
 
-				$WAITCOUNT = 0
-				do {
-					$WAITCOUNT++
-					if ($WAITCOUNT -GT 20) {
-						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to become available."
-						ZPipeRelay "CLOSE"
-						return
-					}
-					GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/20)"
-				} until (ZPipeRelay "OPEN")
-				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
+    # First ensure the service is running
+    $maxServiceChecks = 10
+    $serviceCheck = 0
+    do {
+        $serviceCheck++
+        $service = Get-Service "ziti" -ErrorAction SilentlyContinue
+        if ($service -and $service.Status -eq "Running") {
+            break
+        }
+        if ($serviceCheck -gt $maxServiceChecks) {
+            GoToPrintJSON "1" "Red" "The Ziti service is not running after $maxServiceChecks attempts."
+            return
+        }
+        GoToPrintJSON "1" "DarkGray" "Waiting for Ziti service to start... Attempt $serviceCheck of $maxServiceChecks"
+        Start-Sleep -Seconds 5
+    } while ($true)
+
+    # Then try to connect to the pipe
+    $WAITCOUNT = 0
+    $maxAttempts = 30  # Increased from 20
+    do {
+        $WAITCOUNT++
+        if ($WAITCOUNT -GT $maxAttempts) {
+            GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to become available after $maxAttempts attempts."
+            ZPipeRelay "CLOSE"
+            return
+        }
+        GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/$maxAttempts)"
+        Start-Sleep -Seconds 3  # Increased from 1
+        
+        # Try to validate pipe existence before connection attempt
+        if (-not ([System.IO.Directory]::GetFiles("\\.\\pipe\\") | Where-Object { $_ -match "ziti-edge-tunnel.sock"})) {
+            continue
+        }
+
+    } until (ZPipeRelay "OPEN")
+    GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
 
 				$WAITCount = 0
 				do {
