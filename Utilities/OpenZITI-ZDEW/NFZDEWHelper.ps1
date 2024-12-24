@@ -397,7 +397,9 @@ function DownloadInstall {
         $success = $false
 
         while ($retryCount -lt $maxRetries -and -not $success) {
-            if ((Test-Path "$ZRPath\$ZUIRBinary") -AND ($EnrollMethod -EQ "NATIVE" -OR (Test-Path "$ZDECLIEnroll"))) {
+    if (Test-Path "$ZRPath") {
+        if (Test-Path "$ZRPath\$ZUIRBinary") {
+            if (($EnrollMethod -EQ "NATIVE") -OR (Test-Path "$ZDECLIEnroll")) {
                 $success = $true
                 if ($EnrollMethod -EQ "ZCLI") {
                     Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
@@ -405,12 +407,16 @@ function DownloadInstall {
                 Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
                 GoToPrint "1" "Green" "Install complete."
                 return 1
-            } else {
-                $retryCount++
-                Start-Sleep -Seconds 10
-                GoToPrint "1" "DarkGray" "Waiting for installation to complete... Attempt $retryCount of $maxRetries"
             }
+        } else {
+            GoToPrint "1" "DarkGray" "Installation path exists but binary not found yet. Waiting... Attempt $retryCount of $maxRetries"
         }
+    } else {
+        GoToPrint "1" "DarkGray" "Installation path not found yet. Waiting... Attempt $retryCount of $maxRetries"
+    }
+    $retryCount++
+    Start-Sleep -Seconds 10
+}
 
         # If we get here, we've exceeded max retries without success
         if (-NOT (Test-Path "$ZRPath\$ZUIRBinary"))  {
