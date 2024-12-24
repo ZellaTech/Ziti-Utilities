@@ -358,79 +358,74 @@ function DownloadMethod ($DLSource, $DLWhat, $DLDestination, $DLMethod="$DLDefau
 
 # Run the DOWNLOAD AND INSTALL function.
 function DownloadInstall {
-	if ($ZDERVer -EQ "AUTO") {
-		$ZDERVer = RunRepoResolve "$ZDERRepo"
-		$ZDERBinary = "Ziti.Desktop.Edge.Client-$ZDERVer.exe"
-		#$ZDERName = "ZitiDesktopEdgeClient-$ZDERVer"
-		#$ZDERBinary = "Ziti Desktop Edge Client-$ZDERVer.exe"
-		#$ZDERZip = "$ZDERName.zip"
-	}
-	if ($ZCLIRVer -EQ "AUTO" -AND $EnrollMethod -EQ "ZCLI") {
-		$ZCLIRVer = RunRepoResolve "$ZCLIRRepo"
-		$ZCLIRZip = "ziti-windows-amd64-$ZCLIRVer.zip"
-	}
+    if ($ZDERVer -EQ "AUTO") {
+        $ZDERVer = RunRepoResolve "$ZDERRepo"
+        $ZDERBinary = "Ziti.Desktop.Edge.Client-$ZDERVer.exe"
+    }
+    if ($ZCLIRVer -EQ "AUTO" -AND $EnrollMethod -EQ "ZCLI") {
+        $ZCLIRVer = RunRepoResolve "$ZCLIRRepo"
+        $ZCLIRZip = "ziti-windows-amd64-$ZCLIRVer.zip"
+    }
 
-	if ($EnrollMethod -EQ "ZCLI") {
-		$ZDECLIEnroll = $MyTmpPath + "\ziti\$ZTCLIRBinary"
-		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
-		$BTRETURN = DownloadMethod "$ZCLIRTarget/v$ZCLIRVer" "$ZCLIRZip" "$MyTmpPath"
-	} elseif ($EnrollMethod -EQ "NATIVE") {
-		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
-	}
+    if ($EnrollMethod -EQ "ZCLI") {
+        $ZDECLIEnroll = $MyTmpPath + "\ziti\$ZTCLIRBinary"
+        $BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
+        $BTRETURN = DownloadMethod "$ZCLIRTarget/v$ZCLIRVer" "$ZCLIRZip" "$MyTmpPath"
+    } elseif ($EnrollMethod -EQ "NATIVE") {
+        $BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
+    }
 
-	if ([string]::IsNullOrWhiteSpace($BTRETURN)) {
+    if ([string]::IsNullOrWhiteSpace($BTRETURN)) {
+        $WAITCOUNT = 0
+        do {
+            $WAITCOUNT++
+            if ($WAITCOUNT -GT 20) {
+                GoToPrint "1" "White:Red" "Download failed. Cannot continue."
+                return 0
+            }
+            GoToPrint "1" "DarkGray" "Waiting for OpenZITI installation binary to become available, please wait... ($WAITCOUNT/20)"
+            Start-Sleep 1
+        } until (Test-Path "$MyTmpPath\$ZDERBinary")
+        GoToPrint "1" "Green" "Download succeeded."
+        GoToPrint "1" "Green" "OpenZITI installation binary is available. Download complete."
+        GoToPrint "1" "Yellow" "Now installing NetFoundry software silently, please wait..."
+        Start-Process "$MyTmpPath\$ZDERBinary" -WorkingDirectory "$MyTmpPath" -ArgumentList "/PASSIVE" -Wait
 
-		$WAITCOUNT = 0
-		do {
-			$WAITCOUNT++
-			if ($WAITCOUNT -GT 20) {
-				GoToPrint "1" "White:Red" "Download failed. Cannot continue."
-				return 0
-			}
-			GoToPrint "1" "DarkGray" "Waiting for OpenZITI installation binary to become available, please wait... ($WAITCOUNT/20)"
-			Start-Sleep 1
-		} until (Test-Path "$MyTmpPath\$ZDERBinary")
-		GoToPrint "1" "Green" "Download succeeded."
-		#Expand-Archive -Path "$MyTmpPath\$ZDERZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
-		#if (-NOT (Get-FileHash "$MyTmpPath\$ZDERBinary" -Algorithm SHA256 | Select-Object -ExpandProperty Hash) -EQ (Get-Content "$MyTmpPath\$ZDERBinary.sha256")) {
-		#	$ZDERBinaryHash = Get-FileHash "$MyTmpPath\$ZDERBinary" -Algorithm SHA256 | Select-Object -ExpandProperty Hash
-		#	$ZDERBinaryHashExpected = Get-Content "$MyTmpPath\$ZDERBinary.sha256"
-		#	GoToPrint "1" "White:Red" "Decompress and validation (SHA256) failed. Hash mismatch."
-		#	GoToPrint "1" "White:Red" "File HASH:     $ZDERBinaryHash"
-		#	GoToPrint "1" "White:Red" "EXPECTED HASH: $ZDERBinaryHashExpected"
-		#	return 0
-		#}
-		GoToPrint "1" "Green" "OpenZITI installation binary is available. Download complete."
+        # Add retry logic for binary check
+        $maxRetries = 10
+        $retryCount = 0
+        $success = $false
 
-		GoToPrint "1" "Yellow" "Now installing NetFoundry software silently, please wait..."
-		Start-Process "$MyTmpPath\$ZDERBinary" -WorkingDirectory "$MyTmpPath" -ArgumentList "/PASSIVE" -Wait
+        while ($retryCount -lt $maxRetries -and -not $success) {
+            if ((Test-Path "$ZRPath\$ZUIRBinary") -AND ($EnrollMethod -EQ "NATIVE" -OR (Test-Path "$ZDECLIEnroll"))) {
+                $success = $true
+                if ($EnrollMethod -EQ "ZCLI") {
+                    Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
+                }
+                Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
+                GoToPrint "1" "Green" "Install complete."
+                return 1
+            } else {
+                $retryCount++
+                Start-Sleep -Seconds 10
+                GoToPrint "1" "DarkGray" "Waiting for installation to complete... Attempt $retryCount of $maxRetries"
+            }
+        }
 
-		if ($EnrollMethod -EQ "ZCLI") {
-			Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
-		}
-
-		if ((Test-Path "$ZRPath\$ZUIRBinary") -AND ($EnrollMethod -EQ "NATIVE" -OR (Test-Path "$ZDECLIEnroll"))) {
-			Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
-			GoToPrint "1" "Green" "Install complete."
-			return 1
-		} else {
-			if (-NOT (Test-Path "$ZRPath\$ZUIRBinary"))  {
-				GoToPrint "1" "White:Red" "OpenZITI runtime binary at path [$ZRPath\$ZUIRBinary] does not exist."
-			}
-			if (($EnrollMethod -EQ "NATIVE") -AND (-NOT (Test-Path "$ZDECLIEnroll")))  {
-				GoToPrint "1" "White:Red" "OpenZITI CLI at path [$ZDECLIEnroll] does not exist."
-			}
-			GoToPrint "1" "White:Red" "Install failed.  Cannot continue."
-			return 0
-		}
-
-	} else {
-
-		GoToPrint "1" "Red" "Download failed. Cannot continue. Error message below."
-		GoToPrint "1" "Red" "$BTRETURN"
-		return 0
-
-	}
+        # If we get here, we've exceeded max retries without success
+        if (-NOT (Test-Path "$ZRPath\$ZUIRBinary"))  {
+            GoToPrint "1" "White:Red" "OpenZITI runtime binary at path [$ZRPath\$ZUIRBinary] does not exist."
+        }
+        if (($EnrollMethod -EQ "NATIVE") -AND (-NOT (Test-Path "$ZDECLIEnroll")))  {
+            GoToPrint "1" "White:Red" "OpenZITI CLI at path [$ZDECLIEnroll] does not exist."
+        }
+        GoToPrint "1" "White:Red" "Install failed. Cannot continue."
+        return 0
+    } else {
+        GoToPrint "1" "Red" "Download failed. Cannot continue. Error message below."
+        GoToPrint "1" "Red" "$BTRETURN"
+        return 0
+    }
 }
 
 # Run the ENROLL function.
