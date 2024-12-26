@@ -594,17 +594,27 @@ $null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -A
         }
         
         if (ZPipeRelay "OPEN") {
-            ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}"
-            
-            if (ZPipeRelay "READ") {
-                $response = $script:ZIPCIOENROLLRESPONSE | ConvertFrom-Json
-                if ($response.Success) {
-                    GoToPrintJSON "1" "Green" "Enrollment successful" 
-                    return $true
-                }
-                GoToPrintJSON "1" "Red" "Failed: $($response.Error)"
+    ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}"
+    
+    if (ZPipeRelay "READ") {
+        try {
+            if ([string]::IsNullOrWhiteSpace($script:ZIPCIOENROLLRESPONSE)) {
+                GoToPrintJSON "1" "Red" "Empty response from IPC pipe"
+                return $false
             }
+            $response = $script:ZIPCIOENROLLRESPONSE | ConvertFrom-Json
+            if ($response.Success) {
+                GoToPrintJSON "1" "Green" "Enrollment successful" 
+                return $true
+            }
+            GoToPrintJSON "1" "Red" "Failed: $($response.Error)"
+            return $false
+        } catch {
+            GoToPrintJSON "1" "Red" "Failed to parse response: $_"
+            return $false
         }
+    }
+}
         
         if ($attempts -gt 30) {
             GoToPrintJSON "1" "Red" "IPC connection failed after 30 attempts"
