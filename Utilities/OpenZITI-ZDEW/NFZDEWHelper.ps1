@@ -570,24 +570,24 @@ function RunEnroll {
 				$WAITCOUNT = 0
 				do {
 					$WAITCOUNT++
-					if ($WAITCOUNT -GT 20) {
+					if ($WAITCOUNT -GT 40) {
 						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to become available."
 						ZPipeRelay "CLOSE"
 						return
 					}
-					GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/20)"
+					GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/40)"
 				} until (ZPipeRelay "OPEN")
 				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
 
 				$WAITCount = 0
 				do {
 					$WAITCOUNT++
-					if ($WAITCOUNT -GT 20) {
+					if ($WAITCOUNT -GT 40) {
 						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to accept inbound enrollment request."
 						ZPipeRelay "CLOSE"
 						return
 					}
-					GoToPrintJSON "1" "DarkGray" "Sending the OpenZITI IPC pipe the enrollment request, please wait... ($WAITCOUNT/20)"
+					GoToPrintJSON "1" "DarkGray" "Sending the OpenZITI IPC pipe the enrollment request, please wait... ($WAITCOUNT/40)"
 					ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}\n"
 					start-sleep 1
 				} until (ZPipeRelay "READ")
