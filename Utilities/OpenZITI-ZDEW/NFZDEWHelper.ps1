@@ -358,80 +358,79 @@ function DownloadMethod ($DLSource, $DLWhat, $DLDestination, $DLMethod="$DLDefau
 
 # Run the DOWNLOAD AND INSTALL function.
 function DownloadInstall {
-    if ($ZDERVer -EQ "AUTO") {
-        $ZDERVer = RunRepoResolve "$ZDERRepo"
-        $ZDERBinary = "Ziti.Desktop.Edge.Client-$ZDERVer.exe"
-    }
-    if ($ZCLIRVer -EQ "AUTO" -AND $EnrollMethod -EQ "ZCLI") {
-        $ZCLIRVer = RunRepoResolve "$ZCLIRRepo"
-        $ZCLIRZip = "ziti-windows-amd64-$ZCLIRVer.zip"
-    }
+	if ($ZDERVer -EQ "AUTO") {
+		$ZDERVer = RunRepoResolve "$ZDERRepo"
+		$ZDERBinary = "Ziti.Desktop.Edge.Client-$ZDERVer.exe"
+		#$ZDERName = "ZitiDesktopEdgeClient-$ZDERVer"
+		#$ZDERBinary = "Ziti Desktop Edge Client-$ZDERVer.exe"
+		#$ZDERZip = "$ZDERName.zip"
+	}
+	if ($ZCLIRVer -EQ "AUTO" -AND $EnrollMethod -EQ "ZCLI") {
+		$ZCLIRVer = RunRepoResolve "$ZCLIRRepo"
+		$ZCLIRZip = "ziti-windows-amd64-$ZCLIRVer.zip"
+	}
 
-    if ($EnrollMethod -EQ "ZCLI") {
-        $ZDECLIEnroll = $MyTmpPath + "\ziti\$ZTCLIRBinary"
-        $BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
-        $BTRETURN = DownloadMethod "$ZCLIRTarget/v$ZCLIRVer" "$ZCLIRZip" "$MyTmpPath"
-    } elseif ($EnrollMethod -EQ "NATIVE") {
-        $BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
-    }
+	if ($EnrollMethod -EQ "ZCLI") {
+		$ZDECLIEnroll = $MyTmpPath + "\ziti\$ZTCLIRBinary"
+		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
+		$BTRETURN = DownloadMethod "$ZCLIRTarget/v$ZCLIRVer" "$ZCLIRZip" "$MyTmpPath"
+	} elseif ($EnrollMethod -EQ "NATIVE") {
+		$BTRETURN = DownloadMethod "$ZDERTarget/$ZDERVer" "$ZDERBinary" "$MyTmpPath"
+	}
 
-    if ([string]::IsNullOrWhiteSpace($BTRETURN)) {
-        $WAITCOUNT = 0
-        do {
-            $WAITCOUNT++
-            if ($WAITCOUNT -GT 20) {
-                GoToPrint "1" "White:Red" "Download failed. Cannot continue."
-                return 0
-            }
-            GoToPrint "1" "DarkGray" "Waiting for OpenZITI installation binary to become available, please wait... ($WAITCOUNT/20)"
-            Start-Sleep 1
-        } until (Test-Path "$MyTmpPath\$ZDERBinary")
-        GoToPrint "1" "Green" "Download succeeded."
-        GoToPrint "1" "Green" "OpenZITI installation binary is available. Download complete."
-        GoToPrint "1" "Yellow" "Now installing NetFoundry software silently, please wait..."
-        Start-Process "$MyTmpPath\$ZDERBinary" -WorkingDirectory "$MyTmpPath" -ArgumentList "/PASSIVE" -Wait
+	if ([string]::IsNullOrWhiteSpace($BTRETURN)) {
 
-        # Add retry logic for binary check
-        $maxRetries = 10
-        $retryCount = 0
-        $success = $false
+		$WAITCOUNT = 0
+		do {
+			$WAITCOUNT++
+			if ($WAITCOUNT -GT 20) {
+				GoToPrint "1" "White:Red" "Download failed. Cannot continue."
+				return 0
+			}
+			GoToPrint "1" "DarkGray" "Waiting for OpenZITI installation binary to become available, please wait... ($WAITCOUNT/20)"
+			Start-Sleep 1
+		} until (Test-Path "$MyTmpPath\$ZDERBinary")
+		GoToPrint "1" "Green" "Download succeeded."
+		#Expand-Archive -Path "$MyTmpPath\$ZDERZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
+		#if (-NOT (Get-FileHash "$MyTmpPath\$ZDERBinary" -Algorithm SHA256 | Select-Object -ExpandProperty Hash) -EQ (Get-Content "$MyTmpPath\$ZDERBinary.sha256")) {
+		#	$ZDERBinaryHash = Get-FileHash "$MyTmpPath\$ZDERBinary" -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+		#	$ZDERBinaryHashExpected = Get-Content "$MyTmpPath\$ZDERBinary.sha256"
+		#	GoToPrint "1" "White:Red" "Decompress and validation (SHA256) failed. Hash mismatch."
+		#	GoToPrint "1" "White:Red" "File HASH:     $ZDERBinaryHash"
+		#	GoToPrint "1" "White:Red" "EXPECTED HASH: $ZDERBinaryHashExpected"
+		#	return 0
+		#}
+		GoToPrint "1" "Green" "OpenZITI installation binary is available. Download complete."
 
-        while ($retryCount -lt $maxRetries -and -not $success) {
-    if (Test-Path "$ZRPath") {
-        if (Test-Path "$ZRPath\$ZUIRBinary") {
-            if (($EnrollMethod -EQ "NATIVE") -OR (Test-Path "$ZDECLIEnroll")) {
-                $success = $true
-                if ($EnrollMethod -EQ "ZCLI") {
-                    Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
-                }
-                Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
-                GoToPrint "1" "Green" "Install complete."
-                return 1
-            }
-        } else {
-            GoToPrint "1" "DarkGray" "Installation path exists but binary not found yet. Waiting... Attempt $retryCount of $maxRetries"
-        }
-    } else {
-        GoToPrint "1" "DarkGray" "Installation path not found yet. Waiting... Attempt $retryCount of $maxRetries"
-    }
-    $retryCount++
-    Start-Sleep -Seconds 10
-}
+		GoToPrint "1" "Yellow" "Now installing NetFoundry software silently, please wait..."
+		Start-Process "$MyTmpPath\$ZDERBinary" -WorkingDirectory "$MyTmpPath" -ArgumentList "/PASSIVE" -Wait
 
-        # If we get here, we've exceeded max retries without success
-        if (-NOT (Test-Path "$ZRPath\$ZUIRBinary"))  {
-            GoToPrint "1" "White:Red" "OpenZITI runtime binary at path [$ZRPath\$ZUIRBinary] does not exist."
-        }
-        if (($EnrollMethod -EQ "NATIVE") -AND (-NOT (Test-Path "$ZDECLIEnroll")))  {
-            GoToPrint "1" "White:Red" "OpenZITI CLI at path [$ZDECLIEnroll] does not exist."
-        }
-        GoToPrint "1" "White:Red" "Install failed. Cannot continue."
-        return 0
-    } else {
-        GoToPrint "1" "Red" "Download failed. Cannot continue. Error message below."
-        GoToPrint "1" "Red" "$BTRETURN"
-        return 0
-    }
+		if ($EnrollMethod -EQ "ZCLI") {
+			Expand-Archive -Path "$MyTmpPath\$ZCLIRZip" -DestinationPath "$MyTmpPath" -Force 2>&1 | out-null
+		}
+
+		if ((Test-Path "$ZRPath\$ZUIRBinary") -AND ($EnrollMethod -EQ "NATIVE" -OR (Test-Path "$ZDECLIEnroll"))) {
+			Start-Process "$ZRPath\$ZUIRBinary" -WorkingDirectory "$ZRPath"
+			GoToPrint "1" "Green" "Install complete."
+			return 1
+		} else {
+			if (-NOT (Test-Path "$ZRPath\$ZUIRBinary"))  {
+				GoToPrint "1" "White:Red" "OpenZITI runtime binary at path [$ZRPath\$ZUIRBinary] does not exist."
+			}
+			if (($EnrollMethod -EQ "NATIVE") -AND (-NOT (Test-Path "$ZDECLIEnroll")))  {
+				GoToPrint "1" "White:Red" "OpenZITI CLI at path [$ZDECLIEnroll] does not exist."
+			}
+			GoToPrint "1" "White:Red" "Install failed.  Cannot continue."
+			return 0
+		}
+
+	} else {
+
+		GoToPrint "1" "Red" "Download failed. Cannot continue. Error message below."
+		GoToPrint "1" "Red" "$BTRETURN"
+		return 0
+
+	}
 }
 
 # Run the ENROLL function.
@@ -564,72 +563,71 @@ function RunEnroll {
 		GoToPrint "1" "Yellow" "Now enrolling [$TargetFile] using method [$EnrollMethod], please wait..."
 		if ($EnrollMethod -EQ "NATIVE") {
 
-			
-$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
-    param($TargetJWT, $TargetFile)
-    
-    $TargetJWTString = Get-Content "$TargetJWT"
+			$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
+				param($TargetJWT,$TargetFile)
+				$TargetJWTString = Get-Content "$TargetJWT"
 
-    # Service check
-    $maxRetries = 10
-    $retryCount = 0
-    do {
-        $service = Get-Service "ziti" -ErrorAction SilentlyContinue
-        if ($service -and $service.Status -eq "Running") { break }
-        $retryCount++
-        if ($retryCount -gt $maxRetries) {
-            GoToPrintJSON "1" "Red" "Ziti service not running after $maxRetries attempts"
-            return
-        }
-        Start-Sleep -Seconds 5
-    } while ($true)
+				$WAITCOUNT = 0
+				do {
+					$WAITCOUNT++
+					if ($WAITCOUNT -GT 20) {
+						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to become available."
+						ZPipeRelay "CLOSE"
+						return
+					}
+					GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/20)"
+				} until (ZPipeRelay "OPEN")
+				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
 
-    # Process pipe and enrollment
-    $attempts = 0
-    do {
-        $attempts++
-        if (-not ([System.IO.Directory]::GetFiles("\\.\\pipe\\") | Where-Object { $_ -match "ziti-edge-tunnel.sock"})) {
-            Start-Sleep -Seconds 3
-            continue
-        }
-        
-        if (ZPipeRelay "OPEN") {
-    ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}"
-    
-    if (ZPipeRelay "READ") {
-        try {
-            if ([string]::IsNullOrWhiteSpace($script:ZIPCIOENROLLRESPONSE)) {
-                GoToPrintJSON "1" "Red" "Empty response from IPC pipe"
-                return $false
-            }
-            $response = $script:ZIPCIOENROLLRESPONSE | ConvertFrom-Json
-            if ($response.Success) {
-                GoToPrintJSON "1" "Green" "Enrollment successful" 
-                return $true
-            }
-            GoToPrintJSON "1" "Red" "Failed: $($response.Error)"
-            return $false
-        } catch {
-            GoToPrintJSON "1" "Red" "Failed to parse response: $_"
-            return $false
-        }
-    }
-}
-        
-        if ($attempts -gt 30) {
-            GoToPrintJSON "1" "Red" "IPC connection failed after 30 attempts"
-            return $false
-        }
-        Start-Sleep -Seconds 2
-    } while ($true)
-}
+				$WAITCount = 0
+				do {
+					$WAITCOUNT++
+					if ($WAITCOUNT -GT 20) {
+						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to accept inbound enrollment request."
+						ZPipeRelay "CLOSE"
+						return
+					}
+					GoToPrintJSON "1" "DarkGray" "Sending the OpenZITI IPC pipe the enrollment request, please wait... ($WAITCOUNT/20)"
+					ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}\n"
+					start-sleep 1
+				} until (ZPipeRelay "READ")
+				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe accepted the enrollment request."
 
-# Handle job output 
-$jobOutput = Receive-Job -Name "$TargetFile-ZENROLL" -Wait
-if ($jobOutput -eq $true) {
-    $EnrollState = $true
-}
-Remove-Job -Force -Name $TargetFile-ZENROLL
+				$script:ZIPCIOENROLLRESPONSE
+
+				ZPipeRelay "CLOSE"
+			}
+
+			# Begin review of enrollment process until no more data is available on the process.
+			$EnrollState = $false
+			do {
+				$CurrentLine = Receive-Job -Name "$TargetFile-ZENROLL" -ErrorAction Continue 6>&1
+				if ([string]::IsNullOrWhiteSpace($CurrentLine)) {
+					continue
+				} else {
+					$CurrentLineJSON = $CurrentLine | ConvertFrom-Json
+				}
+				# Enrollment flags.
+				if (($CurrentLineJSON.Success -EQ $null) -AND ($CurrentLineJSON.Error -EQ $null) -AND ($CurrentLineJSON.Message -EQ $null)) {
+					GoToPrint "1" "Red" "UNKNOWN_RESPONSE [$CurrentLine]"
+				} elseif ($CurrentLineJSON.Success -EQ $null) {
+					if ($CurrentLineJSON.Error) {
+						GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message) [$($CurrentLineJSON.Error)]"
+					} else {
+						GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message)"
+					}
+				} elseif ($CurrentLineJSON.Success -EQ $true) {
+					$EnrollState = $CurrentLineJSON.Success
+					GoToPrint "1" "Green" "The OpenZITI IPC pipe returned [$EnrollState]."
+					break
+				} elseif ($CurrentLineJSON.Success -EQ $false) {
+					$EnrollState = $CurrentLineJSON.Success
+					GoToPrint "1" "Red" "The OpenZITI IPC pipe returned [$EnrollState] with message [$($CurrentLineJSON.Error)]."
+					break
+				}
+			} while (((Get-Job -Name "$TargetFile-ZENROLL").HasMoreData) -EQ $true)
+
+			Remove-Job -Force -Name $TargetFile-ZENROLL
 
 			# If the flag of TRUE was caught, review that data payload from the output.
 			if ($EnrollState) {
