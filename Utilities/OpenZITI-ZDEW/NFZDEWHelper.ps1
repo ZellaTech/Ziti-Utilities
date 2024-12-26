@@ -564,108 +564,62 @@ function RunEnroll {
 		GoToPrint "1" "Yellow" "Now enrolling [$TargetFile] using method [$EnrollMethod], please wait..."
 		if ($EnrollMethod -EQ "NATIVE") {
 
-			$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
-    param($TargetJWT,$TargetFile)
+			
+$null = Start-Job -Name "$TargetFile-ZENROLL" -InitializationScript $PipeInit -ArgumentList "$TargetJWT","$TargetFile" -ScriptBlock {
+    param($TargetJWT, $TargetFile)
+    
     $TargetJWTString = Get-Content "$TargetJWT"
 
-    # First ensure the service is running
-    $maxServiceChecks = 10
-    $serviceCheck = 0
+    # Service check
+    $maxRetries = 10
+    $retryCount = 0
     do {
-        $serviceCheck++
         $service = Get-Service "ziti" -ErrorAction SilentlyContinue
-        if ($service -and $service.Status -eq "Running") {
-            break
-        }
-        if ($serviceCheck -gt $maxServiceChecks) {
-            GoToPrintJSON "1" "Red" "The Ziti service is not running after $maxServiceChecks attempts."
+        if ($service -and $service.Status -eq "Running") { break }
+        $retryCount++
+        if ($retryCount -gt $maxRetries) {
+            GoToPrintJSON "1" "Red" "Ziti service not running after $maxRetries attempts"
             return
         }
-        GoToPrintJSON "1" "DarkGray" "Waiting for Ziti service to start... Attempt $serviceCheck of $maxServiceChecks"
         Start-Sleep -Seconds 5
     } while ($true)
 
-    # Then try to connect to the pipe
-    $WAITCOUNT = 0
-    $maxAttempts = 30  # Increased from 20
+    # Process pipe and enrollment
+    $attempts = 0
     do {
-        $WAITCOUNT++
-        if ($WAITCOUNT -GT $maxAttempts) {
-            GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to become available after $maxAttempts attempts."
-            ZPipeRelay "CLOSE"
-            return
-        }
-        GoToPrintJSON "1" "DarkGray" "Waiting for OpenZITI IPC pipe to become available, please wait... ($WAITCOUNT/$maxAttempts)"
-        Start-Sleep -Seconds 3  # Increased from 1
-        
-        # Try to validate pipe existence before connection attempt
+        $attempts++
         if (-not ([System.IO.Directory]::GetFiles("\\.\\pipe\\") | Where-Object { $_ -match "ziti-edge-tunnel.sock"})) {
+            Start-Sleep -Seconds 3
             continue
         }
-
-    } until (ZPipeRelay "OPEN")
-    GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe became available."
-
-				$WAITCount = 0
-				do {
-					$WAITCOUNT++
-					if ($WAITCOUNT -GT 20) {
-						GoToPrintJSON "1" "Red" "The OpenZITI IPC pipe failed to accept inbound enrollment request."
-						ZPipeRelay "CLOSE"
-						return
-					}
-					GoToPrintJSON "1" "DarkGray" "Sending the OpenZITI IPC pipe the enrollment request, please wait... ($WAITCOUNT/20)"
-					ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}\n"
-					start-sleep 1
-				} until (ZPipeRelay "READ")
-				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe accepted the enrollment request."
-
-				$script:ZIPCIOENROLLRESPONSE
-
-				ZPipeRelay "CLOSE"
-			}
-
-			# Begin review of enrollment process until no more data is available on the process.
-			$EnrollState = $false
-			do {
-    $CurrentLine = Receive-Job -Name "$TargetFile-ZENROLL" -ErrorAction Continue 6>&1
-    if ([string]::IsNullOrWhiteSpace($CurrentLine)) {
-        continue
-    } 
-    
-    try {
-        $CurrentLineJSON = $null
-        if ($CurrentLine -is [string] -and $CurrentLine.Trim() -ne "") {
-            $CurrentLineJSON = $CurrentLine | ConvertFrom-Json -ErrorAction Stop
-        }
-
-        # Handle JSON parsing
-        if ($CurrentLineJSON) {
-            if (($CurrentLineJSON.Success -eq $null) -and ($CurrentLineJSON.Error -eq $null) -and ($CurrentLineJSON.Message -eq $null)) {
-                GoToPrint "1" "Red" "UNKNOWN_RESPONSE [$CurrentLine]"
-            } elseif ($CurrentLineJSON.Success -eq $null) {
-                if ($CurrentLineJSON.Error) {
-                    GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message) [$($CurrentLineJSON.Error)]"
-                } else {
-                    GoToPrint $CurrentLineJSON.Verbosity $CurrentLineJSON.Color "$($CurrentLineJSON.Message)"
+        
+        if (ZPipeRelay "OPEN") {
+            ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}"
+            
+            if (ZPipeRelay "READ") {
+                $response = $script:ZIPCIOENROLLRESPONSE | ConvertFrom-Json
+                if ($response.Success) {
+                    GoToPrintJSON "1" "Green" "Enrollment successful" 
+                    return $true
                 }
-            } elseif ($CurrentLineJSON.Success -eq $true) {
-                $EnrollState = $CurrentLineJSON.Success
-                GoToPrint "1" "Green" "The OpenZITI IPC pipe returned [$EnrollState]."
-                break
-            } elseif ($CurrentLineJSON.Success -eq $false) {
-                $EnrollState = $CurrentLineJSON.Success
-                GoToPrint "1" "Red" "The OpenZITI IPC pipe returned [$EnrollState] with message [$($CurrentLineJSON.Error)]."
-                break
+                GoToPrintJSON "1" "Red" "Failed: $($response.Error)"
             }
         }
-    } catch {
-        Write-Host "Error processing enrollment response: $_"
-        continue
-    }
-} while (((Get-Job -Name "$TargetFile-ZENROLL").HasMoreData) -eq $true)
+        
+        if ($attempts -gt 30) {
+            GoToPrintJSON "1" "Red" "IPC connection failed after 30 attempts"
+            return $false
+        }
+        Start-Sleep -Seconds 2
+    } while ($true)
+}
 
-			Remove-Job -Force -Name $TargetFile-ZENROLL
+# Handle job output 
+$jobOutput = Receive-Job -Name "$TargetFile-ZENROLL" -Wait
+if ($jobOutput -eq $true) {
+    $EnrollState = $true
+}
+Remove-Job -Force -Name $TargetFile-ZENROLL
 
 			# If the flag of TRUE was caught, review that data payload from the output.
 			if ($EnrollState) {
