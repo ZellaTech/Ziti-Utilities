@@ -86,7 +86,59 @@ $ConfigDefaults	= '
 		"5.6.7.8"
 	)
 '
+# Validation for GoToPrint function
+function GoToPrint ([int]$PrintLevel="1", $PrintColor="DarkGray:White", $PrintMessage="No Message") {
+    # Ensure PrintLevel is a single integer
+    if ($PrintLevel -is [array]) {
+        $PrintLevel = $PrintLevel[0] # Use the first element if it's an array
+    }
 
+    if (-not ($PrintLevel -is [int])) {
+        Write-Error "Invalid PrintLevel: $PrintLevel. Defaulting to 1."
+        $PrintLevel = 1
+    }
+
+    # Print the message
+    Write-Host "$PrintMessage" -ForegroundColor $PrintColor.Split(":")[0] -BackgroundColor $PrintColor.Split(":")[1]
+}
+
+# Ensure job output and JSON processing are validated
+function ProcessJobOutput ($JobName) {
+    $jobData = Receive-Job -Name $JobName -ErrorAction Continue 6>&1
+    foreach ($line in $jobData) {
+        if (-not [string]::IsNullOrWhiteSpace($line)) {
+            try {
+                $lineJSON = $line | ConvertFrom-Json
+                # Validate verbosity
+                $verbosity = $lineJSON.Verbosity
+                if ($verbosity -is [array]) {
+                    $verbosity = $verbosity[0] # Use the first element if it's an array
+                }
+
+                if (-not ($verbosity -is [int])) {
+                    throw "Invalid verbosity value: $verbosity"
+                }
+
+                GoToPrint $verbosity $lineJSON.Color "$($lineJSON.Message)"
+            } catch {
+                Write-Error "Failed to process line: $_"
+            }
+        }
+    }
+}
+
+# Ensure that Receive-Job and JSON inputs are valid globally
+function ValidateJsonInput ($InputObject) {
+    if (-not $InputObject) {
+        throw "InputObject is null or empty."
+    }
+    try {
+        $json = $InputObject | ConvertFrom-Json
+        return $json
+    } catch {
+        throw "Invalid JSON input: $InputObject"
+    }
+}
 ###################################################################################################################
 ### FUNCTIONS LOADER ###
 # Printer.
