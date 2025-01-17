@@ -68,7 +68,7 @@ $OptionalCmds	= @(
 $ConfigDefaults	= '
 	$script:DefaultMode     = "environment" # Default mode if no options arguments are passed in. See help menu for options.
 	$script:AutoUpdate      = "true" # Instructs the program to check for an update to itself from the specified server (true=try to update | false=ignore).
-	$script:ServerURL       = "https://raw.githubusercontent.com/NicFragale/NetFoundry/main/Utilities/OpenZITI-ZDEW" # Update server URL.
+	$script:ServerURL       = "https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/main/Utilities/OpenZITI-ZDEW" # Update server URL.
 	$script:ServerRootExec  = "NFZDEWHelper.ps1" # Filename of runtime on update server.
 	$script:ZDERVer         = "AUTO" # ZITI Desktop Edge (Win) version to target from repos (AUTO=find automatically | [X.XX.XX=target this version]).
 	$script:ZCLIRVer        = "AUTO" # ZITI CLI version to target from repos (AUTO=find automatically | [X.XX.XX]=target this version).
@@ -588,7 +588,7 @@ function RunEnroll {
 						return
 					}
 					GoToPrintJSON "1" "DarkGray" "Sending the OpenZITI IPC pipe the enrollment request, please wait... ($WAITCOUNT/40)"
-					ZPipeRelay "{""Data"":{""JwtFileName"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}\n"
+					ZPipeRelay "{""Data"":{""IdentityFilename"":""$TargetFile.jwt"",""JwtContent"":""$TargetJWTString""},""Command"":""AddIdentity""}\n"
 					start-sleep 1
 				} until (ZPipeRelay "READ")
 				GoToPrintJSON "1" "DarkGray" "The OpenZITI IPC pipe accepted the enrollment request."
