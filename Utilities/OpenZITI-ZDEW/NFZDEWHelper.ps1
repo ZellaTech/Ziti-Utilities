@@ -357,6 +357,12 @@ function DownloadMethod ($DLSource, $DLWhat, $DLDestination, $DLMethod="$DLDefau
 }
 
 # Run the DOWNLOAD AND INSTALL function.
+
+
+if ($ZDERVer -eq "2.5.1.1") {
+    $ZDERBinary = "Ziti.Desktop.Edge.Client-2.5.1.1.exe"
+}
+
 function DownloadInstall {
 	if ($ZDERVer -EQ "AUTO") {
 		$ZDERVer = RunRepoResolve "$ZDERRepo"
