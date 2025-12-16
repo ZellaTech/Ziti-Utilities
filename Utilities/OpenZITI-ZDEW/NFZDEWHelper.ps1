@@ -70,7 +70,7 @@ $ConfigDefaults	= '
 	$script:AutoUpdate      = "true" # Instructs the program to check for an update to itself from the specified server (true=try to update | false=ignore).
 	$script:ServerURL       = "https://raw.githubusercontent.com/ZellaTech/Ziti-Utilities/main/Utilities/OpenZITI-ZDEW" # Update server URL.
 	$script:ServerRootExec  = "NFZDEWHelper.ps1" # Filename of runtime on update server.
-	$script:ZDERVer         = "AUTO" # ZITI Desktop Edge (Win) version to target from repos (AUTO=find automatically | [X.XX.XX=target this version]).
+	$script:ZDERVer         = "2.8.4.0" # ZITI Desktop Edge (Win) version to target from repos (AUTO=find automatically | [X.XX.XX=target this version]).
 	$script:ZCLIRVer        = "AUTO" # ZITI CLI version to target from repos (AUTO=find automatically | [X.XX.XX]=target this version).
 	$script:OverwriteInst   = "false" # If set to "true" will overwrite if software already exists (true=overwrite | false=ignore).
 	$script:JWTObtain       = "SEARCH" # Default Enrollment Action when no JWT string is passed in (ASK=Ask with prompt for JWT string | SEARCH=Find any JWTs in local dir).
@@ -1105,3 +1105,4 @@ PrintBanner "TERM"
 ###################################################################################################################
 # EOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOFEOF #
 ###################################################################################################################
+
